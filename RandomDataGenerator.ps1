@@ -6,7 +6,7 @@ param (
     [int]$FindCedula
 )
 
-#$ErrorActionPreference = 'SilentlyContinue'
+$ErrorActionPreference = 'Continue'
 #$DebugPreference = "Continue"
 
 $DataFolder = "$PSScriptRoot/Data"
@@ -435,8 +435,6 @@ function Find-Cedula {
         [int]$endIndex=$Global:padronTotalRecords-1
     )
 
-    Open-Padron-File
-
     if ($endIndex - $startIndex -eq 1) {
         $startIndex..$endIndex | ForEach-Object {
             $person = Read-Real-Person $_
@@ -487,6 +485,13 @@ function Main() {
     }
 
     if ($FindCedula) {
+        if (-not $(EnsureDataFiles)) {
+            return
+        }
+    
+        Load-Diselec
+        Open-Padron-File
+
         Find-Cedula $FindCedula
         return
     }
@@ -495,5 +500,6 @@ function Main() {
 }
 
 if ($myinvocation.InvocationName -ne ".") {
+    $ErrorActionPreference = 'SilentlyContinue'
     Main
 }
