@@ -2,7 +2,8 @@ param (
     [int]$RandomRealPerson,
     [int]$RandomFakePerson,
     [int]$RandomPassword,
-    [int]$RandomEmail
+    [int]$RandomEmail,
+    [int]$FindCedula
 )
 
 #$ErrorActionPreference = 'SilentlyContinue'
@@ -427,6 +428,43 @@ function Post-Data {
     return Invoke-WebRequest  $url -Method 'POST' -UserAgent $userAgent  -Body $body
 }
 
+function Find-Cedula {
+    param (
+        [int]$cedula, 
+        [int]$startIndex=0,
+        [int]$endIndex=$Global:padronTotalRecords-1
+    )
+
+    Open-Padron-File
+
+    if ($endIndex - $startIndex -eq 1) {
+        $startIndex..$endIndex | ForEach-Object {
+            $person = Read-Real-Person $_
+            if ([int]$person.Id -eq $cedula) {
+                return $person
+            }
+        }
+    } else {
+        $middle = (($endIndex + $startIndex) / 2)
+        if (-not $middle -or $middle -lt 1) {
+            return
+        }
+
+        $middle = [int][math]::Round($middle)
+
+        $person = Read-Real-Person $middle
+        if ([int]$person.Id -eq $cedula) {
+            return $person
+        }
+
+        if ($cedula -lt [int]$person.Id) {
+            return Find-Cedula $cedula $startIndex $middle
+        } else {
+            return Find-Cedula $cedula $middle $endIndex
+        }
+    }
+}
+
 function Main() {
     if ($RandomRealPerson) {
         Random-Real-Person -count $RandomRealPerson
@@ -444,8 +482,13 @@ function Main() {
     }
 
     if ($RandomEmail) {
-        return
         Random-PseudoReal-Email -count $RandomEmail
+        return
+    }
+
+    if ($FindCedula) {
+        Find-Cedula $FindCedula
+        return
     }
 
     Random-Fake-Person
